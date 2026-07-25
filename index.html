@@ -1051,6 +1051,7 @@
     }).catch(() => {
       autoEmailStatus.textContent = 'Could not auto-email a copy — please still use the options below.';
     });
+    logToAgencyPlatform(data);
   });
 
   const downloadStatus = document.getElementById('downloadStatus');
@@ -1119,6 +1120,25 @@
   function fileNameFor(){
     const nameSafe = (document.querySelector('[name="lastName"]').value || 'OFW').replace(/[^a-z0-9]+/gi,'_');
     return `OFW-Information-Sheet-${nameSafe}.png`;
+  }
+
+  // Best-effort mirror of every submission into the agency's own Google
+  // Sheets-backed platform (a separate Apps Script project), so the
+  // translator can track OWWA applications in the same admin dashboard she
+  // uses for everything else. This is supplementary to the Web3Forms email
+  // above, not a replacement — if it fails silently (e.g. a future change to
+  // the platform's URL), the Web3Forms email still goes through independently.
+  const AGENCY_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbzxToyyNsrCXWBLI7Zs4VZEFwoAwi_nmpLQIokYA2KXFyV3TaoK4E8mxO-zr45bkJgZ/exec';
+  function logToAgencyPlatform(data){
+    // Content-Type text/plain avoids a CORS preflight (which Apps Script
+    // can't answer, since it has no doOptions handler) — the browser sends
+    // this as a "simple request" instead, and Apps Script still reads the
+    // JSON body fine via e.postData.contents regardless of the declared type.
+    fetch(AGENCY_PLATFORM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ formType: 'owwa', data })
+    }).catch(() => {});
   }
 
   // Automatically emails a copy (signature image + all filled fields) to
