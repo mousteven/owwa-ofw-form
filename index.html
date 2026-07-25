@@ -1129,15 +1129,32 @@
   // above, not a replacement — if it fails silently (e.g. a future change to
   // the platform's URL), the Web3Forms email still goes through independently.
   const AGENCY_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbzSZ5P33WVIrJKpD9o3FRdQYQI3sPGznFFQvHgc0S3KT90LtyH7iAeFNSnMd1a1No1Q/exec';
-  function logToAgencyPlatform(data){
+
+  function blobToBase64_(blob){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result).split(',')[1] || '');
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function logToAgencyPlatform(data){
     // Content-Type text/plain avoids a CORS preflight (which Apps Script
     // can't answer, since it has no doOptions handler) — the browser sends
     // this as a "simple request" instead, and Apps Script still reads the
     // JSON body fine via e.postData.contents regardless of the declared type.
+    // Also includes the rendered PNG (base64) so the agency gets the actual
+    // filled-in sheet image in her backend, not just the raw field values.
+    let imageBase64 = null;
+    try {
+      const blob = await getPngBlob();
+      if (blob) imageBase64 = await blobToBase64_(blob);
+    } catch (e) {}
     fetch(AGENCY_PLATFORM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ formType: 'owwa', data })
+      body: JSON.stringify({ formType: 'owwa', data, imageBase64 })
     }).catch(() => {});
   }
 
