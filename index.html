@@ -1040,12 +1040,12 @@
 
     const autoEmailStatus = document.getElementById('autoEmailStatus');
     autoEmailStatus.textContent = 'Sending a copy to mousteven@gmail.com…';
-    getPngBlob().then(blob => sendAutoEmail(data, blob)).then(result => {
+    sendAutoEmail(data).then(result => {
       autoEmailStatus.textContent = (result && result.success)
         ? '✓ A copy has been emailed automatically to mousteven@gmail.com.'
-        : 'Could not auto-email a copy [' + JSON.stringify(result) + '] — please still use the options below.';
-    }).catch(e => {
-      autoEmailStatus.textContent = 'Could not auto-email a copy [error: ' + (e && e.message ? e.message : String(e)) + '] — please still use the options below.';
+        : 'Could not auto-email a copy — please still use the options below.';
+    }).catch(() => {
+      autoEmailStatus.textContent = 'Could not auto-email a copy — please still use the options below.';
     });
   });
 
@@ -1121,7 +1121,7 @@
   // mousteven@gmail.com via Web3Forms — a third-party form-to-email relay,
   // since this static page has no backend of its own to send mail directly.
   const WEB3FORMS_KEY = '64820118-cdb6-4b6a-b298-f2f0438ca604';
-  async function sendAutoEmail(data, blob){
+  async function sendAutoEmail(data){
     const fullName = [data.firstName, data.middleName, data.lastName, data.nameExt].filter(Boolean).join(' ');
     const fd = new FormData();
     fd.append('access_key', WEB3FORMS_KEY);
@@ -1150,7 +1150,9 @@
       if (data['benefAddr'+idx]) fd.append(`Beneficiary ${idx} - Address`, data['benefAddr'+idx]);
       if (data['benefContact'+idx]) fd.append(`Beneficiary ${idx} - Contact`, data['benefContact'+idx]);
     });
-    if (blob) fd.append('attachment', blob, fileNameFor());
+    // File attachments are a paid Web3Forms feature — the free tier only
+    // accepts text fields, so the signature image isn't included here; it's
+    // still available via the Download/Copy & Open LINE options below.
     const res = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: fd });
     return await res.json();
   }
