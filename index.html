@@ -547,6 +547,7 @@
     <div class="postbox no-print">
       <b>Step 2 of 2 — Save and send your form</b>
       <span class="fil">Hakbang 2 ng 2 — I-save at ipadala ang form mo</span>
+      <div class="hint" id="autoEmailStatus" style="margin:6px 0 0;"></div>
       <div style="margin-top:8px;" id="postInstructions">
         <b>Easiest way:</b> 1. Tap <b>“Copy &amp; Open LINE”</b>. 2. In LINE, press and hold the message box and choose <b>Paste</b>, then send.<br>
         <span style="display:block; margin-top:4px;">If pasting doesn't work on your phone: tap <b>“Download as Image”</b> instead, then attach that picture yourself in LINE.</span>
@@ -1036,6 +1037,16 @@
     document.querySelector('.wrap').classList.add('summary-mode');
     fitSheetToWrap();
     preparePngBlob();
+
+    const autoEmailStatus = document.getElementById('autoEmailStatus');
+    autoEmailStatus.textContent = 'Sending a copy to mousteven@gmail.com…';
+    getPngBlob().then(blob => sendAutoEmail(data, blob)).then(result => {
+      autoEmailStatus.textContent = (result && result.success)
+        ? '✓ A copy has been emailed automatically to mousteven@gmail.com.'
+        : 'Could not auto-email a copy — please still use the options below.';
+    }).catch(() => {
+      autoEmailStatus.textContent = 'Could not auto-email a copy — please still use the options below.';
+    });
   });
 
   const downloadStatus = document.getElementById('downloadStatus');
@@ -1104,6 +1115,44 @@
   function fileNameFor(){
     const nameSafe = (document.querySelector('[name="lastName"]').value || 'OFW').replace(/[^a-z0-9]+/gi,'_');
     return `OFW-Information-Sheet-${nameSafe}.png`;
+  }
+
+  // Automatically emails a copy (signature image + all filled fields) to
+  // mousteven@gmail.com via Web3Forms — a third-party form-to-email relay,
+  // since this static page has no backend of its own to send mail directly.
+  const WEB3FORMS_KEY = '64820118-cdb6-4b6a-b298-f2f0438ca604';
+  async function sendAutoEmail(data, blob){
+    const fullName = [data.firstName, data.middleName, data.lastName, data.nameExt].filter(Boolean).join(' ');
+    const fd = new FormData();
+    fd.append('access_key', WEB3FORMS_KEY);
+    fd.append('subject', `OFW Information Sheet - ${fullName || 'Unnamed'}`);
+    fd.append('from_name', fullName || 'OWWA Form');
+    const fields = [
+      ['Last Name', data.lastName], ['First Name', data.firstName], ['Middle Name', data.middleName], ['Name Ext.', data.nameExt],
+      ['House/Lot/Block/Phase No.', data.houseNo], ['Street', data.street], ['Subdivision', data.subdivision],
+      ['Barangay', data.barangay], ['Municipality/City', data.city], ['Province', data.province], ['Zipcode', data.zipcode],
+      ['Contact No.', data.contactNo], ['E-mail', data.email], ['Passport No.', data.passportNo],
+      ['Birthdate', data.birthdate], ['Sex', data.sex], ['Religion', data.religion], ['Civil Status', data.civilStatus],
+      ['Highest Educational Attainment', data.education], ['Course', data.course],
+      ['Employer', data.employer], ['Employer Address', data.employerAddress], ['Employer Tel', data.employerTel],
+      ['Jobsite/Country', data.jobsite], ['Position', data.position],
+      ['Monthly Salary', data.salaryAmount], ['Currency', data.salaryCurrency], ['Contract Duration', data.contractDuration],
+      ['Agency', data.agency]
+    ];
+    for (const [label, value] of fields) if (value) fd.append(label, value);
+    document.querySelectorAll('#benefList .benef').forEach(row => {
+      const idx = row.dataset.idx;
+      const name = data['benefName'+idx];
+      if (!name) return;
+      fd.append(`Beneficiary ${idx} - Name`, name);
+      if (data['benefRel'+idx]) fd.append(`Beneficiary ${idx} - Relationship`, data['benefRel'+idx]);
+      if (data['benefBday'+idx]) fd.append(`Beneficiary ${idx} - Birthday`, data['benefBday'+idx]);
+      if (data['benefAddr'+idx]) fd.append(`Beneficiary ${idx} - Address`, data['benefAddr'+idx]);
+      if (data['benefContact'+idx]) fd.append(`Beneficiary ${idx} - Contact`, data['benefContact'+idx]);
+    });
+    if (blob) fd.append('attachment', blob, fileNameFor());
+    const res = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: fd });
+    return await res.json();
   }
 
   // Render the PNG in the background as soon as the summary appears, so by
