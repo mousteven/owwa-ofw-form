@@ -1043,9 +1043,9 @@
     getPngBlob().then(blob => sendAutoEmail(data, blob)).then(result => {
       autoEmailStatus.textContent = (result && result.success)
         ? '✓ A copy has been emailed automatically to mousteven@gmail.com.'
-        : 'Could not auto-email a copy — please still use the options below.';
-    }).catch(() => {
-      autoEmailStatus.textContent = 'Could not auto-email a copy — please still use the options below.';
+        : 'Could not auto-email a copy [' + JSON.stringify(result) + '] — please still use the options below.';
+    }).catch(e => {
+      autoEmailStatus.textContent = 'Could not auto-email a copy [error: ' + (e && e.message ? e.message : String(e)) + '] — please still use the options below.';
     });
   });
 
