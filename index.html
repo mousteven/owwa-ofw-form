@@ -1066,57 +1066,76 @@
   async function sheetToPngBlob(scale){
     if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e){} }
     const sheet = document.querySelector('.owwa-sheet');
-    const sheetRect = sheet.getBoundingClientRect();
-    const wPx = sheetRect.width, hPx = sheetRect.height;
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(wPx*scale);
-    canvas.height = Math.round(hPx*scale);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(scale, scale);
 
-    function rel(el){
-      const r = el.getBoundingClientRect();
-      return { x: r.left - sheetRect.left, y: r.top - sheetRect.top, w: r.width, h: r.height };
+    // fitSheetToWrap() applies a CSS transform:scale(...) to .owwa-sheet so it
+    // fits the viewport on screen. getBoundingClientRect() reflects that scaled
+    // (post-transform) size, but getComputedStyle().fontSize does NOT — it stays
+    // at the true CSS px value. Drawing full-size text at shrunk positions is
+    // what caused the overlapping/cropped export. Neutralize the display
+    // transform while we measure & draw, so the canvas always captures the true
+    // 612x792pt layout regardless of the current on-screen scale.
+    const prevTransform = sheet.style.transform;
+    const prevVisibility = sheet.style.visibility;
+    sheet.style.transform = 'none';
+    sheet.style.visibility = 'hidden';
+    void sheet.offsetHeight; // force reflow
+
+    try {
+      const sheetRect = sheet.getBoundingClientRect();
+      const wPx = sheetRect.width, hPx = sheetRect.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(wPx*scale);
+      canvas.height = Math.round(hPx*scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
+
+      function rel(el){
+        const r = el.getBoundingClientRect();
+        return { x: r.left - sheetRect.left, y: r.top - sheetRect.top, w: r.width, h: r.height };
+      }
+
+      sheet.querySelectorAll('.bar').forEach(el => {
+        const r = rel(el);
+        ctx.fillStyle = getComputedStyle(el).backgroundColor;
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+      });
+      sheet.querySelectorAll('.box').forEach(el => {
+        const r = rel(el);
+        const lw = parseFloat(getComputedStyle(el).borderTopWidth) || 1;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = lw;
+        ctx.strokeRect(r.x + lw/2, r.y + lw/2, r.w - lw, r.h - lw);
+      });
+      sheet.querySelectorAll('.rule').forEach(el => {
+        const r = rel(el);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(r.x, r.y, r.w, Math.max(1, r.h));
+      });
+      for (const el of sheet.querySelectorAll('.logo, .sig-img')) {
+        const r = rel(el);
+        const img = new Image();
+        await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = el.src; });
+        ctx.drawImage(img, r.x, r.y, r.w, r.h);
+      }
+      sheet.querySelectorAll('.t').forEach(el => {
+        const r = rel(el);
+        const cs = getComputedStyle(el);
+        const size = parseFloat(cs.fontSize);
+        const isBold = parseInt(cs.fontWeight, 10) >= 600;
+        const isItalic = cs.fontStyle === 'italic';
+        ctx.fillStyle = cs.color;
+        ctx.font = `${isItalic ? 'italic ' : ''}${isBold ? '700 ' : ''}${size}px ${cs.fontFamily}`;
+        ctx.textBaseline = 'top';
+        ctx.fillText(el.textContent, r.x, r.y);
+      });
+
+      return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    } finally {
+      sheet.style.transform = prevTransform;
+      sheet.style.visibility = prevVisibility;
     }
-
-    sheet.querySelectorAll('.bar').forEach(el => {
-      const r = rel(el);
-      ctx.fillStyle = getComputedStyle(el).backgroundColor;
-      ctx.fillRect(r.x, r.y, r.w, r.h);
-    });
-    sheet.querySelectorAll('.box').forEach(el => {
-      const r = rel(el);
-      const lw = parseFloat(getComputedStyle(el).borderTopWidth) || 1;
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = lw;
-      ctx.strokeRect(r.x + lw/2, r.y + lw/2, r.w - lw, r.h - lw);
-    });
-    sheet.querySelectorAll('.rule').forEach(el => {
-      const r = rel(el);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(r.x, r.y, r.w, Math.max(1, r.h));
-    });
-    for (const el of sheet.querySelectorAll('.logo, .sig-img')) {
-      const r = rel(el);
-      const img = new Image();
-      await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = el.src; });
-      ctx.drawImage(img, r.x, r.y, r.w, r.h);
-    }
-    sheet.querySelectorAll('.t').forEach(el => {
-      const r = rel(el);
-      const cs = getComputedStyle(el);
-      const size = parseFloat(cs.fontSize);
-      const isBold = parseInt(cs.fontWeight, 10) >= 600;
-      const isItalic = cs.fontStyle === 'italic';
-      ctx.fillStyle = cs.color;
-      ctx.font = `${isItalic ? 'italic ' : ''}${isBold ? '700 ' : ''}${size}px ${cs.fontFamily}`;
-      ctx.textBaseline = 'top';
-      ctx.fillText(el.textContent, r.x, r.y);
-    });
-
-    return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
   }
 
   function fileNameFor(){
