@@ -330,15 +330,15 @@
             <input required name="firstName" placeholder="Juan" autocomplete="given-name">
           </label>
           <label class="field span2">
-            <span class="lab">Middle Name</span>
+            <span class="lab">Middle Name<span class="req">*</span></span>
             <span class="fil">Gitnang Pangalan</span>
-            <input name="middleName" placeholder="Santos" autocomplete="additional-name">
+            <input required name="middleName" placeholder="Santos" autocomplete="additional-name">
           </label>
           <label class="field span2">
-            <span class="lab">Name Ext.</span>
+            <span class="lab">Name Ext.<span class="req">*</span></span>
             <span class="fil">Suffix (Jr., Sr., atbp.)</span>
-            <select name="nameExt">
-              <option value="">— none —</option>
+            <select required name="nameExt">
+              <option value="None">— none —</option>
               <option>Jr.</option><option>Sr.</option><option>II</option><option>III</option><option>IV</option>
             </select>
           </label>
@@ -389,8 +389,8 @@
         </div>
         <div class="grid g3" style="margin-top:14px;">
           <label class="field">
-            <span class="lab">Passport No.</span><span class="fil">Numero ng Pasaporte</span>
-            <input name="passportNo" placeholder="P1234567A" style="text-transform:uppercase;">
+            <span class="lab">Passport No.<span class="req">*</span></span><span class="fil">Numero ng Pasaporte</span>
+            <input required name="passportNo" placeholder="P1234567A" style="text-transform:uppercase;">
           </label>
           <label class="field">
             <span class="lab">Birthdate<span class="req">*</span></span><span class="fil">Kaarawan</span>
@@ -407,9 +407,10 @@
         </div>
         <div class="grid g3" style="margin-top:14px;">
           <label class="field">
-            <span class="lab">Religion</span><span class="fil">Relihiyon</span>
-            <select name="religion">
+            <span class="lab">Religion<span class="req">*</span></span><span class="fil">Relihiyon</span>
+            <select required name="religion">
               <option value="">Select…</option>
+              <option>None</option>
               <option>Roman Catholic</option>
               <option>Iglesia ni Cristo</option>
               <option>Islam</option>
@@ -423,17 +424,18 @@
             </select>
           </label>
           <label class="field">
-            <span class="lab">Civil Status</span><span class="fil">Katayuang Sibil</span>
-            <select name="civilStatus">
+            <span class="lab">Civil Status<span class="req">*</span></span><span class="fil">Katayuang Sibil</span>
+            <select required name="civilStatus">
               <option value="">Select…</option>
               <option>Single</option><option>Married</option><option>Widowed</option>
               <option>Separated</option><option>Annulled</option><option>Divorced</option>
             </select>
           </label>
           <label class="field">
-            <span class="lab">Highest Educational Attainment</span><span class="fil">Pinakamataas na Naabot na Edukasyon</span>
-            <select name="education">
+            <span class="lab">Highest Educational Attainment<span class="req">*</span></span><span class="fil">Pinakamataas na Naabot na Edukasyon</span>
+            <select required name="education">
               <option value="">Select…</option>
+              <option>No Formal Education</option>
               <option>Elementary Graduate</option>
               <option>High School Graduate</option>
               <option>Senior High School Graduate</option>
@@ -445,8 +447,8 @@
           </label>
         </div>
         <label class="field" style="margin-top:14px;">
-          <span class="lab">Course</span><span class="fil">Kurso (kung may natapos na kolehiyo/bokasyonal)</span>
-          <input name="course" placeholder="e.g. BS Nursing, Caregiving NC II">
+          <span class="lab">Course<span class="req">*</span></span><span class="fil">Kurso (kung may natapos na kolehiyo/bokasyonal)</span>
+          <input required name="course" placeholder="e.g. BS Nursing, Caregiving NC II — write None if not applicable">
         </label>
       </div>
     </section>
@@ -463,12 +465,12 @@
             <input required name="employer" placeholder="e.g. company name, or your employer's name">
           </label>
           <label class="field span2">
-            <span class="lab">Employer Address</span><span class="fil">Address ng Employer</span>
-            <input name="employerAddress" placeholder="Street, city, country">
+            <span class="lab">Employer Address<span class="req">*</span></span><span class="fil">Address ng Employer</span>
+            <input required name="employerAddress" placeholder="Street, city, country">
           </label>
           <label class="field">
-            <span class="lab">Tel No. (abroad)</span><span class="fil">Telepono sa Ibang Bansa</span>
-            <input name="employerTel" placeholder="+971 …">
+            <span class="lab">Tel No. (abroad)<span class="req">*</span></span><span class="fil">Telepono sa Ibang Bansa</span>
+            <input required name="employerTel" placeholder="+971 …">
           </label>
           <label class="field">
             <span class="lab">Jobsite/Country<span class="req">*</span></span><span class="fil">Bansa ng Trabaho</span>
@@ -491,8 +493,8 @@
             </div>
           </label>
           <label class="field">
-            <span class="lab">Contract Duration</span><span class="fil">Tagal ng Kontrata</span>
-            <select name="contractDuration">
+            <span class="lab">Contract Duration<span class="req">*</span></span><span class="fil">Tagal ng Kontrata</span>
+            <select required name="contractDuration">
               <option value="">Select…</option>
               <option>1 year</option><option>2 years</option><option>3 years</option>
             </select>
@@ -646,24 +648,24 @@
       ${idx > 1 ? '<button type="button" class="benef-remove">Remove</button>' : ''}
       <div class="grid" style="margin-top:6px;">
         <label class="field">
-          <span class="lab">Name</span><span class="fil">Pangalan</span>
-          <input name="benefName${idx}" placeholder="Full name">
+          <span class="lab">Name<span class="req">*</span></span><span class="fil">Pangalan</span>
+          <input required name="benefName${idx}" placeholder="Full name">
         </label>
         <label class="field">
-          <span class="lab">Relationship</span><span class="fil">Kaugnayan</span>
-          <select name="benefRel${idx}"><option value="">Select…</option>${relOptions()}</select>
+          <span class="lab">Relationship<span class="req">*</span></span><span class="fil">Kaugnayan</span>
+          <select required name="benefRel${idx}"><option value="">Select…</option>${relOptions()}</select>
         </label>
         <label class="field">
-          <span class="lab">Birthday</span><span class="fil">Kaarawan</span>
-          <input type="date" name="benefBday${idx}">
+          <span class="lab">Birthday<span class="req">*</span></span><span class="fil">Kaarawan</span>
+          <input required type="date" name="benefBday${idx}">
         </label>
         <label class="field">
-          <span class="lab">Address</span><span class="fil">Tirahan</span>
-          <input name="benefAddr${idx}" placeholder="Address">
+          <span class="lab">Address<span class="req">*</span></span><span class="fil">Tirahan</span>
+          <input required name="benefAddr${idx}" placeholder="Address">
         </label>
         <label class="field span2">
-          <span class="lab">Contact No. / E-mail</span><span class="fil">Contact / Email</span>
-          <input name="benefContact${idx}" placeholder="Phone or email">
+          <span class="lab">Contact No. / E-mail<span class="req">*</span></span><span class="fil">Contact / Email</span>
+          <input required name="benefContact${idx}" placeholder="Phone or email">
         </label>
       </div>`;
     benefList.appendChild(div);
