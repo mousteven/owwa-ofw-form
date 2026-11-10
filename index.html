@@ -560,7 +560,8 @@
     <div class="postbox no-print">
       <b>Step 2 of 2 — Save and send your form</b>
       <span class="fil">Hakbang 2 ng 2 — I-save at ipadala ang form mo</span>
-      <div class="hint" id="autoEmailStatus" style="margin:6px 0 0;"></div>
+      <div id="sendStatus" style="margin:8px 0 0; font-size:14px; font-weight:600;"></div>
+      <button type="button" class="primary" id="resendBtn" hidden style="margin-top:6px;">↻ Send again / Ipadala ulit</button>
       <div style="margin-top:8px;" id="postInstructions">
         <b>Easiest way:</b> 1. Tap <b>“Copy &amp; Open LINE”</b>. 2. In LINE, press and hold the message box and choose <b>Paste</b>, then send.<br>
         <span style="display:block; margin-top:4px;">If pasting doesn't work on your phone: tap <b>“Download as Image”</b> instead, then attach that picture yourself in LINE.</span>
@@ -1053,17 +1054,31 @@
     fitSheetToWrap();
     preparePngBlob();
 
-    const autoEmailStatus = document.getElementById('autoEmailStatus');
-    autoEmailStatus.textContent = 'Sending a copy to mousteven@gmail.com…';
-    sendAutoEmail(data).then(result => {
-      autoEmailStatus.textContent = (result && result.success)
-        ? '✓ A copy has been emailed automatically to mousteven@gmail.com.'
-        : 'Could not auto-email a copy — please still use the options below.';
-    }).catch(() => {
-      autoEmailStatus.textContent = 'Could not auto-email a copy — please still use the options below.';
-    });
-    logToAgencyPlatform(data);
+    sendAutoEmail(data).catch(() => {});   // text-only backup copy; the platform send below (with signature) is what counts
+    lastData = data;
+    sendToAgency();
   });
+
+  // 2026-11-10: "sent" used to show before the signature image reached the platform; an applicant
+  // who left right away got there text-only. Now success waits for the platform's ok, else offer a resend.
+  let lastData = null, sending = false;
+  const sendStatus = document.getElementById('sendStatus');
+  const resendBtn = document.getElementById('resendBtn');
+  async function sendToAgency(){
+    sending = true; resendBtn.hidden = true;
+    sendStatus.style.color = '';
+    sendStatus.textContent = '⏳ Sending your form and signature… please keep this page open. / Ipinapadala… huwag munang isara ang page.';
+    let ok = false;
+    try { ok = await logToAgencyPlatform(lastData); } catch (e) {}
+    sending = false;
+    sendStatus.style.color = ok ? 'var(--accent)' : '#c0392b';
+    sendStatus.textContent = ok
+      ? '✓ Sent! We received your form and signature. / Naipadala na!'
+      : '✗ Not sent yet. Check your internet, then tap “Send again”. / Hindi pa naipadala. Pindutin ang “Ipadala ulit”.';
+    resendBtn.hidden = ok;
+  }
+  resendBtn.addEventListener('click', sendToAgency);
+  window.addEventListener('beforeunload', e => { if (sending) { e.preventDefault(); e.returnValue = ''; } });
 
   const downloadStatus = document.getElementById('downloadStatus');
 
@@ -1158,7 +1173,7 @@
   // uses for everything else. This is supplementary to the Web3Forms email
   // above, not a replacement — if it fails silently (e.g. a future change to
   // the platform's URL), the Web3Forms email still goes through independently.
-  const AGENCY_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbzSZ5P33WVIrJKpD9o3FRdQYQI3sPGznFFQvHgc0S3KT90LtyH7iAeFNSnMd1a1No1Q/exec';
+  const AGENCY_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbycLQO2yrDYoKEl0DwIC07-Ll8nuLCxrIUhawIrBH1aWbIyislfe9VsonWBW8zYbdudSA/exec';
 
   function blobToBase64_(blob){
     return new Promise((resolve, reject) => {
@@ -1181,11 +1196,13 @@
       const blob = await getPngBlob();
       if (blob) imageBase64 = await blobToBase64_(blob);
     } catch (e) {}
-    fetch(AGENCY_PLATFORM_URL, {
+    if (!imageBase64) return false;
+    const res = await fetch(AGENCY_PLATFORM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ formType: 'owwa', data, imageBase64 })
-    }).catch(() => {});
+    });
+    return !!(await res.json()).ok;
   }
 
   // Automatically emails a copy (signature image + all filled fields) to
